@@ -1,0 +1,257 @@
+// components/workflows/share-tab.tsx
+
+import React, { useMemo } from 'react';
+import { LatLng } from 'leaflet';
+import MapWithDrawing from './MapWithDrawing';
+import CompletenessPanel from './CompletenessPanel';
+
+interface ShareTabProps {
+  polygon: LatLng[] | null;
+  records: any[];
+}
+
+const ShareTab: React.FC<ShareTabProps> = ({ polygon, records }) => {
+  // Existing code here
+
+  const bubbles = useMemo(() => {
+    // Existing code here
+  }, [records]);
+
+  const shapes = useMemo(() => {
+    // Existing code here
+  }, [polygon]);
+
+  const insideCount = useMemo(() => {
+    if (!polygon || polygon.length < 3) return null;
+    let count = 0;
+    for (const rec of records) {
+      const hasInside = rec.files.some((f) => {
+        if (f.status !== "Georeferenced") return false;
+        let lat = typeof f.lat === "number" ? f.lat : undefined;
+        let lng = typeof f.lng === "number" ? f.lng : undefined;
+        if ((lat === undefined || lng === undefined) && Array.isArray(f.path) && f.path.length > 0) {
+          const c = centroidOfPath(f.path);
+          lat = c.lat;
+          lng = c.lng;
+        }
+        if (typeof lat !== "number" || typeof lng !== "number") return false;
+        return pointInPolygon({ lat, lng }, polygon);
+      });
+      if (hasInside) count++;
+    }
+    return count;
+  }, [polygon, records]);
+
+  // Existing code here
+
+  return (
+    <div className="flex">
+      <div className="w-1/2">
+        <MapWithDrawing polygon={polygon} />
+        {polygon && typeof insideCount === "number" && insideCount === 0 ? (
+          <div className="text-sm text-muted-foreground">
+            No records currently inside this area.
+          </div>
+        ) : null}
+        <CompletenessPanel />
+        {/* rest of code here */}
+      </div>
+      <div className="w-1/2">
+        {/* rest of code here */}
+      </div>
+    </div>
+  );
+};
+
+function pointInPolygon(point: LatLng, polygon: LatLng[]): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].lng, yi = polygon[i].lat;
+    const xj = polygon[j].lng, yj = polygon[j].lat;
+    const intersect = (yi > point.lat) !== (yj > point.lat) && point.lng < ((xj - xi) * (point.lat - yi)) / (yj - yi + 0.0) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function centroidOfPath(path: LatLng[]): LatLng {
+  if (!path.length) return { lat: 0, lng: 0 };
+  const sum = path.reduce((acc, p) => ({ lat: acc.lat + p.lat, lng: acc.lng + p.lng }), { lat: 0, lng: 0 });
+  return { lat: sum.lat / path.length, lng: sum.lng / path.length };
+}
+
+export default ShareTab;
+
+// app/share/page.tsx
+
+import React, { useMemo } from 'react';
+import { LatLng } from 'leaflet';
+import MapWithDrawing from './MapWithDrawing';
+import CompletenessPanel from './CompletenessPanel';
+
+interface ShareSecurePageProps {
+  data: {
+    polygon: LatLng[] | null;
+    records: any[];
+  };
+}
+
+const ShareSecurePage: React.FC<ShareSecurePageProps> = ({ data }) => {
+  // Existing code here
+
+  const bubbles = useMemo(() => {
+    // Existing code here
+  }, [data.records]);
+
+  const shapes = useMemo(() => {
+    // Existing code here
+  }, [data.polygon]);
+
+  const insideCount = useMemo(() => {
+    if (!data?.polygon || data.polygon.length < 3) return null;
+    const polygon = data.polygon;
+    let count = 0;
+    for (const rec of data.records ?? []) {
+      const hasInside = rec.files.some((f) => {
+        if (f.status !== "Georeferenced") return false;
+        let lat = typeof f.lat === "number" ? f.lat : undefined;
+        let lng = typeof f.lng === "number" ? f.lng : undefined;
+        if ((lat === undefined || lng === undefined) && Array.isArray(f.path) && f.path.length > 0) {
+          const c = centroidOfPath(f.path);
+          lat = c.lat;
+          lng = c.lng;
+        }
+        if (typeof lat !== "number" || typeof lng !== "number") return false;
+        return pointInPolygon({ lat, lng }, polygon);
+      });
+      if (hasInside) count++;
+    }
+    return count;
+  }, [data]);
+
+  // Existing code here
+
+  return (
+    <div className="flex">
+      <div className="w-1/2">
+        <MapWithDrawing polygon={data.polygon} />
+        {data.polygon && typeof insideCount === "number" && insideCount === 0 ? (
+          <div className="mt-3 text-sm text-muted-foreground">
+            No records currently inside this area.
+          </div>
+        ) : null}
+        <CompletenessPanel />
+        {/* rest of code here */}
+      </div>
+      <div className="w-1/2">
+        {/* rest of code here */}
+      </div>
+    </div>
+  );
+};
+
+function pointInPolygon(point: LatLng, polygon: LatLng[]): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].lng, yi = polygon[i].lat;
+    const xj = polygon[j].lng, yj = polygon[j].lat;
+    const intersect = (yi > point.lat) !== (yj > point.lat) && point.lng < ((xj - xi) * (point.lat - yi)) / (yj - yi + 0.0) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function centroidOfPath(path: LatLng[]): LatLng {
+  if (!path.length) return { lat: 0, lng: 0 };
+  const sum = path.reduce((acc, p) => ({ lat: acc.lat + p.lat, lng: acc.lng + p.lng }), { lat: 0, lng: 0 });
+  return { lat: sum.lat / path.length, lng: sum.lng / path.length };
+}
+
+export default ShareSecurePage;
+
+// app/share/[id]/page.tsx
+
+import React, { useMemo } from 'react';
+import { LatLng } from 'leaflet';
+import MapWithDrawing from './MapWithDrawing';
+import CompletenessPanel from './CompletenessPanel';
+
+interface SharePageProps {
+  request: {
+    polygon: LatLng[] | null;
+    records: any[];
+  };
+}
+
+const SharePage: React.FC<SharePageProps> = ({ request }) => {
+  // Existing code here
+
+  const bubbles = useMemo(() => {
+    // Existing code here
+  }, [request.records]);
+
+  const shapes = useMemo(() => {
+    // Existing code here
+  }, [request.polygon]);
+
+  const insideCount = useMemo(() => {
+    if (!request?.polygon || request.polygon.length < 3) return null;
+    const polygon = request.polygon;
+    let count = 0;
+    for (const rec of request.records) {
+      const hasInside = rec.files.some((f) => {
+        if (f.status !== "Georeferenced") return false;
+        let lat = typeof f.lat === "number" ? f.lat : undefined;
+        let lng = typeof f.lng === "number" ? f.lng : undefined;
+        if ((lat === undefined || lng === undefined) && Array.isArray(f.path) && f.path.length > 0) {
+          const c = centroidOfPath(f.path);
+          lat = c.lat;
+          lng = c.lng;
+        }
+        if (typeof lat !== "number" || typeof lng !== "number") return false;
+        return pointInPolygon({ lat, lng }, polygon);
+      });
+      if (hasInside) count++;
+    }
+    return count;
+  }, [request]);
+
+  // Existing code here
+
+  return (
+    <div className="flex">
+      <div className="w-1/2">
+        <MapWithDrawing polygon={request.polygon} />
+        {request.polygon && typeof insideCount === "number" && insideCount === 0 ? (
+          <div className="mt-3 text-sm text-muted-foreground">
+            No records currently inside this area.
+          </div>
+        ) : null}
+        <CompletenessPanel />
+        {/* rest of code here */}
+      </div>
+      <div className="w-1/2">
+        {/* rest of code here */}
+      </div>
+    </div>
+  );
+};
+
+function pointInPolygon(point: LatLng, polygon: LatLng[]): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].lng, yi = polygon[i].lat;
+    const xj = polygon[j].lng, yj = polygon[j].lat;
+    const intersect = (yi > point.lat) !== (yj > point.lat) && point.lng < ((xj - xi) * (point.lat - yi)) / (yj - yi + 0.0) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function centroidOfPath(path: LatLng[]): LatLng {
+  if (!path.length) return { lat: 0, lng: 0 };
+  const sum = path.reduce((acc, p) => ({ lat: acc.lat + p.lat, lng: acc.lng + p.lng }), { lat: 0, lng: 0 });
+  return { lat: sum.lat / path.length, lng: sum.lng / path.length };
+}
+
+export default SharePage;

@@ -1,0 +1,25 @@
+// app/page.tsx
+<header className="flex flex-col gap-1">
+<h1 className="text-2xl font-semibold">UTILITX — Space-first records</h1>
+<p className="text-muted-foreground">
+  Draw an area, attach files, place them on the map, check coverage, and share a secure link.
+</p>
+</header>
+<section aria-labelledby="workspace">
+<h2 id="workspace" className="sr-only">Workspace</h2>
+{/* rest of code here */}
+</section>
+
+// components/workflows/upload-tab.tsx
+<header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+<div>
+  <h2 className="text-xl font-semibold">Map workspace</h2>
+  <p className="text-muted-foreground">
+    Draw the area, add files, and place them as points, lines, or polygons. Check completeness and share a secure link.
+  </p>
+</div>
+<div className="flex items-center gap-2">
+  <span className="text-xs px-2 py-1 rounded bg-emerald-50 text-emerald-700">Upload</span>
+  <span className="text-xs px-2 py-1 rounded bg-sky-50 text-sky-700">Share</span>
+</div>
+</header>

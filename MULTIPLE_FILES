@@ -1,0 +1,169 @@
+// lib/record-types.ts
+export type FileStatus = "Not Georeferenced" | "Georeferenced";
+export type RecordTypeId = string;
+export type LatLng = { lat: number; lng: number };
+export type GeomType = "Point" | "LineString" | "Polygon";
+
+export type FileStub = {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  status: FileStatus;
+
+  // Per-file record type (now required)
+  recordTypeId: RecordTypeId;
+  recordTypePath: string;
+
+  // Point geometry (legacy support)
+  lat?: number;
+  lng?: number;
+
+  // New generalized geometry
+  geomType?: GeomType;
+  path?: LatLng[]; // for LineString or Polygon (Polygon is assumed closed by renderer)
+
+  georefAt?: string; // ISO timestamp
+  georefBy?: string;
+};
+
+export type RequestRecord = {
+  // Other properties here
+};
+
+// components/workflows/upload-tab.tsx
+import { useMemo } from "react";
+import { crypto } from "crypto";
+import { type LatLng, type RequestRecord, type RecordTypeId } from "@/lib/record-types";
+
+const UploadTab = ({ selectedType, pendingDropMeta, uploader }) => {
+  const now = new Date().toISOString();
+
+  const addFilesToQueue = (files) => {
+    const newRecord = {
+      files: files.map((f) => ({
+        id: crypto.randomUUID(),
+        name: f.name,
+        size: f.size,
+        type: f.type,
+        status: "Not Georeferenced",
+        recordTypeId: selectedType.id as RecordTypeId,
+        recordTypePath: selectedType.path,
+      })),
+    };
+    // /** rest of code here **/
+  };
+
+  const addGeoreferencedRecord = (files, latlng) => {
+    const newRecord = {
+      files: files.map((f) => ({
+        id: crypto.randomUUID(),
+        name: f.name,
+        size: f.size,
+        type: f.type,
+        status: "Georeferenced",
+        recordTypeId: selectedType.id as RecordTypeId,
+        recordTypePath: selectedType.path,
+        geomType: "Point",
+        path: [{ lat: latlng.lat, lng: latlng.lng }],
+        lat: latlng.lat,
+        lng: latlng.lng,
+        georefAt: now,
+        georefBy: uploader,
+      })),
+    };
+    // /** rest of code here **/
+  };
+
+  const handleGeorefComplete = (result, centroid) => {
+    if (pendingDropMeta.type.id === "bulk") {
+      const newRecord = {
+        files: pendingDropMeta.files.map((f) => ({
+          id: crypto.randomUUID(),
+          name: f.name,
+          size: f.size,
+          type: f.type,
+          status: "Georeferenced",
+          recordTypeId: pendingDropMeta.type.id as RecordTypeId,
+          recordTypePath: pendingDropMeta.type.path,
+          geomType: result.type,
+          path: result.path,
+          lat: centroid.lat,
+          lng: centroid.lng,
+          georefAt: now,
+          georefBy: uploader,
+        })),
+      };
+      // /** rest of code here **/
+    }
+  };
+
+  const markersAndShapes = useMemo(() => {
+    return files.map((f) => {
+      const rec = f.record;
+      return {
+        marker: `${f.recordTypePath || rec.recordTypePath} • P${rec.priority}`,
+        lineString: `${f.recordTypePath || rec.recordTypePath} • P${rec.priority}`,
+        polygon: `${f.recordTypePath || rec.recordTypePath} • P${rec.priority}`,
+      };
+    });
+  }, [files]);
+
+  // /** rest of code here **/
+};
+
+// components/records-table.tsx
+import { TableCell } from "@mui/material";
+
+const RecordsTable = ({ records }) => {
+  return (
+    <table>
+      <tbody>
+        {records.map((r) => (
+          <tr key={r.id}>
+            <TableCell>{r.file.recordTypePath || r.record.recordTypePath}</TableCell>
+            {/* /** rest of code here **/ */}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+};
+
+// components/upload-files-table.tsx
+import { TableCell } from "@mui/material";
+
+const UploadFilesTable = ({ records }) => {
+  return (
+    <table>
+      <tbody>
+        {records.map((r) => (
+          <tr key={r.id}>
+            <TableCell>{r.file.recordTypePath || r.record.recordTypePath}</TableCell>
+            {/* /** rest of code here **/ */}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+};
+
+// components/workflows/share-tab.tsx
+const ShareTab = ({ records }) => {
+  const descriptions = records.map((rec) => {
+    const baseDesc = `${(rec.file as any).recordTypePath || rec.record.recordTypePath} • P${rec.priority}${rec.orgName ? `\nOrg: ${rec.orgName}` : ""}\nUploaded by ${rec.uploaderName} on ${rec.uploadedAt}`;
+    return {
+      marker: baseDesc,
+      lineString: baseDesc,
+      polygon: baseDesc,
+    };
+  });
+
+  // /** rest of code here **/
+};
+
+// app/share/[id]/page.tsx
+const SharePage = ({ record }) => {
+  const baseDesc = `${(record.file as any).recordTypePath || record.record.recordTypePath} • P${record.priority}\nUploaded by ${record.uploaderName} on ${record.uploadedAt}`;
+  // /** rest of code here **/
+};

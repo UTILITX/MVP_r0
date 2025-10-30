@@ -1,0 +1,99 @@
+There is no existing code. Please write it as a new file.
+
+// components/map-with-drawing.tsx
+useEffect(() => {
+setPolygonPath(polygonProp)
+lastValidPathRef.current = polygonProp ?? null
+// If parent clears the polygon, also remove any existing live polygon from the map
+if (!polygonProp || polygonProp.length < 3) {
+  if (polygonRef.current) {
+    try {
+      polygonRef.current.setMap(null)
+    } catch {}
+    polygonRef.current = null
+  }
+}
+}, [polygonProp])
+
+// components/workflows/upload-tab.tsx
+<CompletenessPanel polygon={polygon} records={records} />
+<div className="flex items-center justify-between text-sm">
+<div className="text-muted-foreground">
+  {polygon && polygon.length >= 3 ? (
+    <div className="flex flex-wrap gap-2">
+      <span className="font-medium text-foreground">Polygon saved:</span>
+      <span>{polygon.length} vertices</span>
+      {typeof areaSqMeters === "number" ? <span>{'•'} Area: {(areaSqMeters / 1_000_000).toFixed(3)} km²</span> : null}
+    </div>
+  ) : (
+    "No polygon yet. You can still georeference files."
+  )}
+</div>
+{polygon && polygon.length >= 3 ? (
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => {
+      setPolygon(null)
+      setAreaSqMeters(null)
+    }}
+  >
+    Remove polygon
+  </Button>
+) : null}
+</div>
+
+// components/workflows/share-tab.tsx
+import { Button } from "@/components/ui/button"
+
+// Inside the Area of Interest card, after the map div and before <CompletenessPanel ... />
+<div className="flex items-center justify-between text-sm">
+<div className="text-muted-foreground">
+  {polygon && polygon.length >= 3 ? (
+    <div className="flex flex-wrap gap-2">
+      <span className="font-medium text-foreground">Polygon saved:</span>
+      <span>{polygon.length} vertices</span>
+      {typeof areaSqMeters === "number" ? <span>{'•'} Area: {(areaSqMeters / 1_000_000).toFixed(3)} km²</span> : null}
+    </div>
+  ) : (
+    "No polygon yet."
+  )}
+</div>
+{polygon && polygon.length >= 3 ? (
+  <Button
+    variant="outline"
+    onClick={() => {
+      setPolygon(null)
+      setAreaSqMeters(null)
+    }}
+  >
+    Remove polygon
+  </Button>
+) : null}
+</div>
+
+// app/request/page.tsx
+<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 justify-between">
+<div className="text-sm text-muted-foreground">
+  {polygon && polygon.length >= 3
+    ? `Polygon with ${polygon.length} vertices${typeof areaSqMeters === "number" ? ` • Area: ${(areaSqMeters / 1_000_000).toFixed(3)} km²` : ""}`
+    : "No polygon yet."}
+</div>
+<div className="flex gap-2">
+  {polygon && polygon.length >= 3 ? (
+    <Button
+      variant="outline"
+      onClick={() => {
+        setPolygon(null)
+        setAreaSqMeters(null)
+      }}
+    >
+      Remove polygon
+    </Button>
+  ) : null}
+  <Button onClick={generateSecureLink}>Generate secure link</Button>
+  <Button variant="outline" onClick={generateLocalDemoLink} title="Stores in this browser only">
+    Generate local demo link
+  </Button>
+</div>
+</div>
