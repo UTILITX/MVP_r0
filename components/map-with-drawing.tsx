@@ -1,5 +1,5 @@
 "use client"
-
+import { ExistingWorkAreasLayer } from "./layers/ExistingWorkAreasLayer";
 import type React from "react"
 import { hasFiles, extractFiles } from "@/utils/file-utils" // Import hasFiles and extractFiles
 
@@ -67,6 +67,9 @@ type Props = {
   onDropFilesAt?: (latlng: LatLng, files: File[]) => void
   focusPoint?: LatLng | null
   focusZoom?: number
+
+  existingPolygons?: GeorefShape[]
+
 }
 
 // Tile-based map implementation
@@ -120,6 +123,36 @@ export function MapWithDrawing({
   const [tilesLoaded, setTilesLoaded] = useState(0)
 
   const [polygonDrawMode, setPolygonDrawMode] = useState(false)
+
+  //Layers
+//<ExistingWorkAreasLayer onSelect={(wa) => setSelectedWorkArea(wa)} />
+const [existingPolygons, setExistingPolygons] = useState<GeorefShape[]>([]);
+
+useEffect(() => {
+  async function fetchExisting() {
+    try {
+      const res = await fetch("/api/work-areas");
+      const { work_areas } = await res.json();
+
+      const shapes: GeorefShape[] = work_areas.map((wa: any) => ({
+        id: wa.id,
+        type: "Polygon",
+        path: wa.geojson.coordinates[0].map(([lng, lat]: [number, number]) => ({ lat, lng })),
+        title: wa.name,
+        description: `Created: ${new Date(wa.created_at).toLocaleString()}`,
+        strokeColor: "#3b82f6",
+        fillColor: "rgba(59, 130, 246, 0.1)",
+      }));
+
+      setExistingPolygons(shapes);
+    } catch (err) {
+      console.error("Failed to load existing work areas", err);
+    }
+  }
+
+  fetchExisting();
+}, []);
+
 
   // Convert lat/lng to pixel coordinates (Web Mercator)
   const latLngToPixel = useCallback(
@@ -345,7 +378,7 @@ export function MapWithDrawing({
     }
 
     // Draw shapes with better rendering
-    shapes.forEach((shape) => {
+    [...shapes, ...existingPolygons].forEach((shape) => {
       if (shape.path.length < 2) return
 
       ctx.strokeStyle = shape.strokeColor || "#0ea5e9"
@@ -516,7 +549,7 @@ export function MapWithDrawing({
     ctx.fillText(`Lat: ${viewport.centerLat.toFixed(6)}`, 15, 28)
     ctx.fillText(`Lng: ${viewport.centerLng.toFixed(6)}`, 15, 45)
     ctx.fillText(`Zoom: ${viewport.zoom.toFixed(2)}`, 15, 62)
-  }, [viewport, polygon, shapes, markers, bubbles, isDrawing, drawingPath, georefColor, latLngToPixel, loadTile])
+  }, [viewport, polygon, shapes, existingPolygons, markers, bubbles, isDrawing, drawingPath, georefColor, latLngToPixel, loadTile]);
 
   // Handle canvas interactions
   const handleCanvasMouseDown = useCallback(
@@ -984,3 +1017,4 @@ function calculatePolygonArea(path: LatLng[]): number {
   // Convert to approximate square meters (very rough)
   return area * 111000 * 111000
 }
+
