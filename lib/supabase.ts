@@ -1,3 +1,8 @@
-import { createClient } from "@supabase/supabase-js"
+import { createClient } from "@supabase/supabase-js";
 
-export const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+export function getSvc() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const svc = process.env.SUPABASE_SERVICE_ROLE!;
+  if (!url || !svc) throw new Error("Missing Supabase env vars");
+  return createClient(url, svc, { auth: { persistSession: false } });
+}
