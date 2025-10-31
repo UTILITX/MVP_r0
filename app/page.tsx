@@ -4,18 +4,9 @@ import { useEffect, useState } from "react"
 import UploadTab from "@/components/workflows/upload-tab"
 import type { RequestRecord, LatLng } from "@/lib/record-types"
 import { loadStagedRecords, saveStagedRecords } from "@/lib/storage"
-
-type PreloadedRequest = {
-  createdAt: string
-  polygon: LatLng[]
-  areaSqMeters?: number
-  title?: string
-  deadline?: string
-  records?: RequestRecord[]
-}
+import { loadWorkArea, saveWorkArea } from "@/lib/work-area-storage" // ✅ Import moved to top
 
 export default function Page() {
-  // Shared records state for the unified workflow
   const [records, setRecords] = useState<RequestRecord[]>([])
   const [preloadedPolygon, setPreloadedPolygon] = useState<LatLng[] | null>(null)
   const [preloadedAreaSqMeters, setPreloadedAreaSqMeters] = useState<number | null>(null)
@@ -23,27 +14,24 @@ export default function Page() {
   useEffect(() => {
     const initial = loadStagedRecords()
     if (initial.length) setRecords(initial)
+  }, []);
 
-    const preloadedData = sessionStorage.getItem("preloadedRequest")
-    if (preloadedData) {
-      try {
-        const parsed: PreloadedRequest = JSON.parse(preloadedData)
-        if (parsed.polygon && parsed.polygon.length >= 3) {
-          setPreloadedPolygon(parsed.polygon)
-          setPreloadedAreaSqMeters(parsed.areaSqMeters || null)
-
-          // If there are existing records in the request, merge them
-          if (parsed.records && parsed.records.length > 0) {
-            setRecords((prev) => [...parsed.records!, ...prev])
-          }
+  useEffect(() => {
+    // 🔄 Fetch most recent polygon from Supabase
+    fetch("/api/work-areas")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.ok && data.workAreas.length > 0) {
+          const workArea = data.workAreas[0];
+          setPreloadedPolygon(workArea.polygon);
+          // Optional: calculate area client-side if needed
+          // setPreloadedAreaSqMeters(calculateArea(workArea.polygon));
         }
-        // Clear the session storage after loading
-        sessionStorage.removeItem("preloadedRequest")
-      } catch (e) {
-        console.warn("Failed to parse preloaded request data:", e)
-      }
-    }
-  }, [])
+      })
+      .catch((err) => {
+        console.error("❌ Failed to fetch persisted work area:", err);
+      });
+  }, []);
 
   useEffect(() => {
     saveStagedRecords(records)
@@ -60,9 +48,7 @@ export default function Page() {
       </header>
 
       <section aria-labelledby="unified-workflow">
-        <h2 id="unified-workflow" className="sr-only">
-          Unified utility records workflow
-        </h2>
+        <h2 id="unified-workflow" className="sr-only">Unified utility records workflow</h2>
         <UploadTab
           records={records}
           setRecords={setRecords}

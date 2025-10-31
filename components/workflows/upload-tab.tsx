@@ -1040,11 +1040,34 @@ ${rec.orgName ? `Org: ${rec.orgName} • ` : ""}Uploaded ${formatDistanceToNow(n
               <MapWithDrawing
                 mode="draw"
                 polygon={polygon}
-                onPolygonChange={(path, area) => {
-                  setPolygon(path)
-                  setAreaSqMeters(area ?? null)
-                  setWorkAreaId(workAreaId || crypto.randomUUID());
+                onPolygonChange={async (path, area) => {
+                  setPolygon(path);
+                  setAreaSqMeters(area ?? null);
+                
+                  if (!workAreaId && path.length >= 3) {
+                    try {
+                      const geojson = {
+                        type: "Polygon",
+                        coordinates: [[...path.map(p => [p.lng, p.lat]), [path[0].lng, path[0].lat]]], // close the ring
+                      };
+                
+                      const res = await fetch("/api/work-areas", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ geojson, name: title || "Unnamed Work Area" }),
+                      });
+                
+                      const json = await res.json();
+                      if (!json.ok) throw new Error(json.error);
+                      
+                      setWorkAreaId(json.id); // ✅ persist the ID
+                      toast({ title: "Work area saved", description: "Polygon was saved to Supabase." });
+                    } catch (err: any) {
+                      toast({ title: "Failed to save polygon", description: err.message || "Unknown error", variant: "destructive" });
+                    }
+                  }
                 }}
+                
                 georefMode={georefMode}
                 georefColor={georefColor}
                 onGeorefComplete={handleGeorefComplete}
