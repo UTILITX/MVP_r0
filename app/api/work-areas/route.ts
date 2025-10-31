@@ -11,9 +11,10 @@ export async function POST(req: Request) {
     const { name, geojson } = body;
 
     const { data: id, error } = await supa.rpc("insert_work_area", {
-      p_name: name,
-      p_geojson: geojson
-    });
+        p_geojson: geojson,
+        p_name: name
+      });
+      
 
     if (error) {
       console.error("🔴 Supabase RPC Error:", error.message);
