@@ -9,12 +9,15 @@ type WorkArea = {
   name: string;
   geojson: GeoJSON.GeoJsonObject;
   created_at: string;
+  
 };
 
 export default function ExistingWorkAreasLayer({
   onSelect,
+  refreshSignal
 }: {
   onSelect?: (wa: WorkArea) => void;
+  refreshSignal?: number;
 }) {
   const map = useMap();
 
@@ -25,6 +28,7 @@ export default function ExistingWorkAreasLayer({
       try {
         const res = await fetch("/api/work-areas");
         const { work_areas } = await res.json();
+        console.log("🔄 Refetching work areas due to refresh signal:", refreshSignal);
 
         work_areas.forEach((wa: WorkArea) => {
           const geoJsonLayer = L.geoJSON(wa.geojson, {
@@ -39,6 +43,7 @@ export default function ExistingWorkAreasLayer({
           });
 
           layerGroup.addLayer(geoJsonLayer);
+
         });
 
         layerGroup.addTo(map);
@@ -53,7 +58,7 @@ export default function ExistingWorkAreasLayer({
       layerGroup.clearLayers(); // ✅ Cleanup to avoid duplicates
       map.removeLayer(layerGroup);
     };
-  }, [map, onSelect]);
+  }, [map, onSelect, refreshSignal]);
 
   return null;
 }

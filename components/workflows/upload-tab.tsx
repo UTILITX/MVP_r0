@@ -88,6 +88,10 @@ export default function UploadTab({ records, setRecords, preloadedPolygon, prelo
 
   const [showAllRecords, setShowAllRecords] = useState(false)
 
+  // refresh to persist polygons from db
+  const [refreshSignal, setRefreshSignal] = useState(0);
+
+
   // Map overlays from records
   const { bubbles, shapes } = useMemo(() => {
     const b: MapBubble[] = []
@@ -248,6 +252,9 @@ ${rec.orgName ? `Org: ${rec.orgName} • ` : ""}Uploaded ${formatDistanceToNow(n
         return; // stop further processing if upload fails
       }
     }
+
+    // ✅ Trigger refresh AFTER all uploads complete
+    setRefreshSignal(prev => prev + 1);
 
     // Set up the selected type
     setSelectedType({

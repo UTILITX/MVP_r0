@@ -47,6 +47,7 @@ type Props = {
   center?: LatLng
   zoom?: number
   maxAreaSqMeters?: number
+  refreshSignal?: number
 
   georefMode?: GeorefMode
   onGeorefComplete?: (
@@ -93,6 +94,7 @@ export function MapWithDrawing({
   onDropFilesAt,
   focusPoint = null,
   focusZoom = 16,
+  refreshSignal=0 //default refresh signal value
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -124,34 +126,34 @@ export function MapWithDrawing({
 
   const [polygonDrawMode, setPolygonDrawMode] = useState(false)
 
-  //Layers
-//<ExistingWorkAreasLayer onSelect={(wa) => setSelectedWorkArea(wa)} />
-const [existingPolygons, setExistingPolygons] = useState<GeorefShape[]>([]);
+  //Layers (the one that was breaking)
 
-useEffect(() => {
-  async function fetchExisting() {
-    try {
-      const res = await fetch("/api/work-areas");
-      const { work_areas } = await res.json();
+  const [existingPolygons, setExistingPolygons] = useState<GeorefShape[]>([]);
 
-      const shapes: GeorefShape[] = work_areas.map((wa: any) => ({
-        id: wa.id,
-        type: "Polygon",
-        path: wa.geojson.coordinates[0].map(([lng, lat]: [number, number]) => ({ lat, lng })),
-        title: wa.name,
-        description: `Created: ${new Date(wa.created_at).toLocaleString()}`,
-        strokeColor: "#3b82f6",
-        fillColor: "rgba(59, 130, 246, 0.1)",
-      }));
+  useEffect(() => {
+    async function fetchExisting() {
+      try {
+        const res = await fetch("/api/work-areas");
+        const { work_areas } = await res.json();
 
-      setExistingPolygons(shapes);
-    } catch (err) {
-      console.error("Failed to load existing work areas", err);
+        const shapes: GeorefShape[] = work_areas.map((wa: any) => ({
+          id: wa.id,
+          type: "Polygon",
+          path: wa.geojson.coordinates[0].map(([lng, lat]: [number, number]) => ({ lat, lng })),
+          title: wa.name,
+          description: `Created: ${new Date(wa.created_at).toLocaleString()}`,
+          strokeColor: "#3b82f6",
+          fillColor: "rgba(59, 130, 246, 0.1)",
+        }));
+
+        setExistingPolygons(shapes);
+      } catch (err) {
+        console.error("Failed to load existing work areas", err);
+      }
     }
-  }
 
-  fetchExisting();
-}, []);
+    fetchExisting();
+  }, [refreshSignal]) // ✅ triggers reload on change;
 
 
   // Convert lat/lng to pixel coordinates (Web Mercator)
