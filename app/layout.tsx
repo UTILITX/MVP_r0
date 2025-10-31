@@ -4,9 +4,6 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import dynamic from "next/dynamic"
 
-const GlobalDevBar = dynamic(() => import("./_GlobalDevBar"), { ssr: false })
-const GlobalRecordTest = dynamic(() => import("./_GlobalRecordTest"), { ssr: false })
-
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
@@ -33,8 +30,9 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} antialiased`}>
         {children}
-        <GlobalDevBar />
-        <GlobalRecordTest />
+        {/* <GlobalDevBar /> */}
+        {/* <GlobalDevBar /> */}
+        {/* <GlobalRecordTest /> */}
       </body>
     </html>
   )
