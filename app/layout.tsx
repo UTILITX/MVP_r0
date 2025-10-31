@@ -30,10 +30,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} antialiased`}>
         {children}
-        {/* <GlobalDevBar /> */}
-        {/* <GlobalDevBar /> */}
-        {/* <GlobalRecordTest /> */}
-      </body>
+           </body>
     </html>
   )
 }
