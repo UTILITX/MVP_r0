@@ -1,6 +1,6 @@
 console.log("🟡 API route loaded");
 import { NextResponse } from "next/server";
-import { getSvc } from "@/lib/supabase";
+import { getSvc } from "@/lib/supabase-client";
 
 export async function POST(req: Request) {
   try {
