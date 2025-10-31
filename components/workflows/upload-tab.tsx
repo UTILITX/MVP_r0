@@ -663,6 +663,22 @@ ${rec.orgName ? `Org: ${rec.orgName} • ` : ""}Uploaded ${formatDistanceToNow(n
               <CardDescription>Draw a polygon on the map to define your work area first.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setPolygon(null);
+                  setAreaSqMeters(null);
+                  setWorkAreaId(null); // ✅ triggers new POST on draw
+                  toast({
+                    title: "Ready to draw new work area",
+                    description: "Click on the map to draw another polygon.",
+                  });
+                }}
+              >
+                ➕ Add New Work Area
+              </Button>
+
+
               <div className="text-sm text-muted-foreground">
                 Click on the map to start drawing your work area polygon. This defines the boundary for your utility
                 records project.

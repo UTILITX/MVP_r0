@@ -1,5 +1,5 @@
 "use client"
-import { ExistingWorkAreasLayer } from "./layers/ExistingWorkAreasLayer";
+import ExistingWorkAreasLayer from "@/components/layers/ExistingWorkAreasLayer";
 import type React from "react"
 import { hasFiles, extractFiles } from "@/utils/file-utils" // Import hasFiles and extractFiles
 
