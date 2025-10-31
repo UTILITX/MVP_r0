@@ -47,6 +47,8 @@ export default function UploadTab({ records, setRecords, preloadedPolygon, prelo
   const [orgName, setOrgName] = useState<string>("")
   const [files, setFiles] = useState<FileList | null>(null)
   const [uploaderName, setUploaderName] = useState<string>("")
+  const [workAreaId, setWorkAreaId] = useState<string | null>(null);
+
 
   // New: secure sharing link flow
   const [genOpen, setGenOpen] = useState(false)
@@ -208,7 +210,7 @@ ${rec.orgName ? `Org: ${rec.orgName} • ` : ""}Uploaded ${formatDistanceToNow(n
     })
   }
 
-  function startDrawingGeometry() {
+  async function startDrawingGeometry() {
     if (!selectedUtilityType || !selectedRecordType || !selectedGeometryType) {
       toast({
         title: "Complete selection",
@@ -218,6 +220,8 @@ ${rec.orgName ? `Org: ${rec.orgName} • ` : ""}Uploaded ${formatDistanceToNow(n
       return
     }
 
+    
+
     if (uploadedFiles.length === 0) {
       toast({
         title: "No files uploaded",
@@ -225,6 +229,24 @@ ${rec.orgName ? `Org: ${rec.orgName} • ` : ""}Uploaded ${formatDistanceToNow(n
         variant: "destructive",
       })
       return
+    }
+
+      // Upload each file + metadata
+    for (const file of uploadedFiles) {
+      try {
+        await handleUpload(file, workAreaId, {
+          utilityType: selectedUtilityType,
+          recordType: selectedRecordType,
+          geometryType: selectedGeometryType,
+          orgName,
+          uploaderName,
+          notes,
+        });
+        toast({ title: "Upload successful", description: `${file.name} uploaded` });
+      } catch (error: any) {
+        toast({ title: "Upload failed", description: error.message || "Unknown error", variant: "destructive" });
+        return; // stop further processing if upload fails
+      }
     }
 
     // Set up the selected type
@@ -1021,6 +1043,7 @@ ${rec.orgName ? `Org: ${rec.orgName} • ` : ""}Uploaded ${formatDistanceToNow(n
                 onPolygonChange={(path, area) => {
                   setPolygon(path)
                   setAreaSqMeters(area ?? null)
+                  setWorkAreaId(workAreaId || crypto.randomUUID());
                 }}
                 georefMode={georefMode}
                 georefColor={georefColor}
@@ -1223,3 +1246,22 @@ function centroidOfPath(path: LatLng[]): LatLng {
   const sum = path.reduce((acc, p) => ({ lat: acc.lat + p.lat, lng: acc.lng + p.lng }), { lat: 0, lng: 0 })
   return { lat: sum.lat / path.length, lng: sum.lng / path.length }
 }
+
+const handleUpload = async (file: File, workAreaId: string, metadata: any) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("workAreaId", workAreaId);
+  formData.append("metadata", JSON.stringify(metadata));
+
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    body: formData,
+  });
+
+  const json = await res.json();
+  if (!json.ok) {
+    console.error("Upload failed:", json.error);
+  } else {
+    console.log("✅ Upload successful:", json.path);
+  }
+};
