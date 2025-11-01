@@ -1,7 +1,7 @@
 "use client"
 import { useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { MapWithDrawing, type MapBubble, type GeorefShape } from "@/components/map-with-drawing"
+import { MapWithDrawing, type MapBubble, type GeorefShape } from "@/components/map-with-drawing-old"
 import { RecordsTable } from "@/components/records-table"
 import type { RequestRecord, LatLng } from "@/lib/record-types"
 import { getUtilityColorsFromPath } from "@/lib/utility-colors"

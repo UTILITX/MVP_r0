@@ -9,6 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@geoman-io/leaflet-geoman-free": "^2.18.3",
     "@hookform/resolvers": "^3.10.0",
     "@mapbox/mapbox-gl-draw": "^1.4.3",
     "@radix-ui/react-accordion": "latest",
@@ -48,6 +49,8 @@
     "cmdk": "latest",
     "date-fns": "latest",
     "embla-carousel-react": "latest",
+    "esri-leaflet": "^3.0.19",
+    "esri-leaflet-vector": "^4.3.2",
     "geist": "^1.3.1",
     "geojson": "latest",
     "h3-js": "^4.1.0",

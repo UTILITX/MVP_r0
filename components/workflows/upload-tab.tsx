@@ -16,7 +16,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
-import { MapWithDrawing, type MapBubble, type GeorefShape } from "@/components/map-with-drawing"
 import { UtilityOverviewPanel } from "@/components/utility-overview-panel"
 import type { UtilityType, RecordType } from "@/components/dual-record-selector"
 import { getUtilityColorsFromPath, getUtilityColorsFromUtilityType } from "@/lib/utility-colors"
@@ -25,6 +24,13 @@ import { cn } from "@/lib/utils"
 import type { GeometryType, GeorefMode, PendingDropMeta } from "@/lib/types"
 import { RecordsTable } from "@/components/records-table"
 import { Edit } from "lucide-react"
+
+import dynamic from "next/dynamic";
+
+const MapWithDrawing = dynamic(() => import("@/components/map-with-drawing"), {
+  ssr: false,
+});
+
 
 type SelectedType = {
   utilityType: UtilityType
@@ -1063,6 +1069,7 @@ ${rec.orgName ? `Org: ${rec.orgName} • ` : ""}Uploaded ${formatDistanceToNow(n
               <MapWithDrawing
                 mode="draw"
                 polygon={polygon}
+                refreshSignal={refreshSignal}
                 onPolygonChange={async (path, area) => {
                   setPolygon(path);
                   setAreaSqMeters(area ?? null);

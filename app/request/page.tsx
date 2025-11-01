@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { MapWithDrawing } from "@/components/map-with-drawing"
+import { MapWithDrawing } from "@/components/map-with-drawing-old"
 import ShareTab from "@/components/workflows/share-tab"
 import type { LatLng, ShareRequest, RequestRecord } from "@/lib/record-types"
 import { saveRequest } from "@/lib/storage"
