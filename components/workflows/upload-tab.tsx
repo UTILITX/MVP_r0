@@ -1,9 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
-const MapWithDrawing = dynamic(() => import("../map-with-drawing"), { ssr: false });
-
-
 import { useEffect } from "react"
 import { useMemo, useState, useRef } from "react"
 import type React from "react"
@@ -22,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
+import MapWithDrawing from "@/components/map-with-drawing";
 import { UtilityOverviewPanel } from "@/components/utility-overview-panel"
 import type { UtilityType, RecordType } from "@/components/dual-record-selector"
 import { getUtilityColorsFromPath, getUtilityColorsFromUtilityType } from "@/lib/utility-colors"
@@ -30,7 +27,6 @@ import { cn } from "@/lib/utils"
 import type { GeometryType, GeorefMode, PendingDropMeta } from "@/lib/types"
 import { RecordsTable } from "@/components/records-table"
 import { Edit } from "lucide-react"
-
 
 type SelectedType = {
   utilityType: UtilityType
@@ -53,8 +49,6 @@ export default function UploadTab({ records, setRecords, preloadedPolygon, prelo
   const [orgName, setOrgName] = useState<string>("")
   const [files, setFiles] = useState<FileList | null>(null)
   const [uploaderName, setUploaderName] = useState<string>("")
-  const [workAreaId, setWorkAreaId] = useState<string | null>(null);
-
 
   // New: secure sharing link flow
   const [genOpen, setGenOpen] = useState(false)
@@ -93,10 +87,6 @@ export default function UploadTab({ records, setRecords, preloadedPolygon, prelo
   const [redrawTarget, setRedrawTarget] = useState<{ recordId: string; fileId: string } | null>(null)
 
   const [showAllRecords, setShowAllRecords] = useState(false)
-
-  // refresh to persist polygons from db
-  const [refreshSignal, setRefreshSignal] = useState(0);
-
 
   // Map overlays from records
   const { bubbles, shapes } = useMemo(() => {
@@ -220,7 +210,7 @@ ${rec.orgName ? `Org: ${rec.orgName} • ` : ""}Uploaded ${formatDistanceToNow(n
     })
   }
 
-  async function startDrawingGeometry() {
+  function startDrawingGeometry() {
     if (!selectedUtilityType || !selectedRecordType || !selectedGeometryType) {
       toast({
         title: "Complete selection",
@@ -230,8 +220,6 @@ ${rec.orgName ? `Org: ${rec.orgName} • ` : ""}Uploaded ${formatDistanceToNow(n
       return
     }
 
-    
-
     if (uploadedFiles.length === 0) {
       toast({
         title: "No files uploaded",
@@ -240,27 +228,6 @@ ${rec.orgName ? `Org: ${rec.orgName} • ` : ""}Uploaded ${formatDistanceToNow(n
       })
       return
     }
-
-      // Upload each file + metadata
-    for (const file of uploadedFiles) {
-      try {
-        await handleUpload(file, workAreaId, {
-          utilityType: selectedUtilityType,
-          recordType: selectedRecordType,
-          geometryType: selectedGeometryType,
-          orgName,
-          uploaderName,
-          notes,
-        });
-        toast({ title: "Upload successful", description: `${file.name} uploaded` });
-      } catch (error: any) {
-        toast({ title: "Upload failed", description: error.message || "Unknown error", variant: "destructive" });
-        return; // stop further processing if upload fails
-      }
-    }
-
-    // ✅ Trigger refresh AFTER all uploads complete
-    setRefreshSignal(prev => prev + 1);
 
     // Set up the selected type
     setSelectedType({
@@ -676,22 +643,6 @@ ${rec.orgName ? `Org: ${rec.orgName} • ` : ""}Uploaded ${formatDistanceToNow(n
               <CardDescription>Draw a polygon on the map to define your work area first.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setPolygon(null);
-                  setAreaSqMeters(null);
-                  setWorkAreaId(null); // ✅ triggers new POST on draw
-                  toast({
-                    title: "Ready to draw new work area",
-                    description: "Click on the map to draw another polygon.",
-                  });
-                }}
-              >
-                ➕ Add New Work Area
-              </Button>
-
-
               <div className="text-sm text-muted-foreground">
                 Click on the map to start drawing your work area polygon. This defines the boundary for your utility
                 records project.
@@ -1065,69 +1016,13 @@ ${rec.orgName ? `Org: ${rec.orgName} • ` : ""}Uploaded ${formatDistanceToNow(n
             <CardDescription>Single map for drawing, georeferencing, and sharing.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-          <div className="aspect-[4/3] w-full rounded-md border">
-            <MapWithDrawing
-              mode="draw"
-              polygon={polygon}
-              refreshSignal={refreshSignal}
-              onPolygonChange={async (path, area) => {
-                setPolygon(path);
-                setAreaSqMeters(area ?? null);
-
-                if (!workAreaId && path.length >= 3) {
-                  try {
-                    const geojson = {
-                      type: "Polygon",
-                      coordinates: [[...path.map((p) => [p.lng, p.lat]), [path[0].lng, path[0].lat]]], // close the ring
-                    };
-
-                    
-
-                    const json = await res.json();
-                    if (!json.ok) throw new Error(json.error);
-
-                    setWorkAreaId(json.id);
-                    toast({ title: "Work area saved", description: "Polygon was saved to Supabase." });
-                  } catch (err: any) {
-                    toast({ title: "Failed to save polygon", description: err.message || "Unknown error", variant: "destructive" });
-                  }
-                }
-              }}
-              georefMode={georefMode}
-              georefColor={georefColor}
-              onGeorefComplete={handleGeorefComplete}
-              pickPointActive={georefMode === "point"}
-              pickZoom={16}
-              bubbles={bubbles}
-              shapes={shapes}
-              enableDrop
-              onDropFilesAt={handleDropFilesAt}
-              focusPoint={focusPoint}
-              focusZoom={16}
-            />
-          </div>
-
-             
-                
-                                
-                
-                const res = await fetch("/api/work-areas", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ geojson, name: title || "Unnamed Work Area" }),
-                });
-                
-                
-                const json = await res.json();
-                if (!json.ok) throw new Error(json.error);
-                
-                
-                setWorkAreaId(json.id); // ✅ persist the ID
-                toast({ title: "Work area saved", description: "Polygon was saved to Supabase." });
-                } catch (err: any) {
-                toast({ title: "Failed to save polygon", description: err.message || "Unknown error", variant: "destructive" });
-                }
-                }
+            <div className="aspect-[4/3] w-full rounded-md border">
+              <MapWithDrawing
+                mode="draw"
+                polygon={polygon}
+                onPolygonChange={(path, area) => {
+                  setPolygon(path)
+                  setAreaSqMeters(area ?? null)
                 }}
                 georefMode={georefMode}
                 georefColor={georefColor}
@@ -1140,7 +1035,7 @@ ${rec.orgName ? `Org: ${rec.orgName} • ` : ""}Uploaded ${formatDistanceToNow(n
                 onDropFilesAt={handleDropFilesAt}
                 focusPoint={focusPoint}
                 focusZoom={16}
-                />
+              />
             </div>
 
             {records.length > 0 && <UtilityOverviewPanel records={records} className="mt-4" />}
@@ -1330,22 +1225,3 @@ function centroidOfPath(path: LatLng[]): LatLng {
   const sum = path.reduce((acc, p) => ({ lat: acc.lat + p.lat, lng: acc.lng + p.lng }), { lat: 0, lng: 0 })
   return { lat: sum.lat / path.length, lng: sum.lng / path.length }
 }
-
-const handleUpload = async (file: File, workAreaId: string, metadata: { utilityType: string; recordType: string; geometryType: string; orgName: string; uploaderName: string; notes: string }) => {
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("workAreaId", workAreaId);
-  formData.append("metadata", JSON.stringify(metadata));
-
-  const res = await fetch("/api/upload", {
-    method: "POST",
-    body: formData,
-  });
-
-  const json = await res.json();
-  if (!json.ok) {
-    throw new Error(json.error || "Upload failed");
-  }
-
-  return json.path;
-};
