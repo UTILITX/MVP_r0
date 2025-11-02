@@ -1,3 +1,9 @@
+"use client";
+
+import dynamic from "next/dynamic";
+const MapWithDrawing = dynamic(() => import("../map-with-drawing"), { ssr: false });
+
+
 import { useEffect } from "react"
 import { useMemo, useState, useRef } from "react"
 import type React from "react"
@@ -24,12 +30,6 @@ import { cn } from "@/lib/utils"
 import type { GeometryType, GeorefMode, PendingDropMeta } from "@/lib/types"
 import { RecordsTable } from "@/components/records-table"
 import { Edit } from "lucide-react"
-
-import dynamic from "next/dynamic";
-
-const MapWithDrawing = dynamic(() => import("@/components/map-with-drawing"), {
-  ssr: false,
-});
 
 
 type SelectedType = {
@@ -1065,39 +1065,70 @@ ${rec.orgName ? `Org: ${rec.orgName} • ` : ""}Uploaded ${formatDistanceToNow(n
             <CardDescription>Single map for drawing, georeferencing, and sharing.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="aspect-[4/3] w-full rounded-md border">
-              <MapWithDrawing
-                mode="draw"
-                polygon={polygon}
-                refreshSignal={refreshSignal}
-                onPolygonChange={async (path, area) => {
-                  setPolygon(path);
-                  setAreaSqMeters(area ?? null);
-                
-                  if (!workAreaId && path.length >= 3) {
-                    try {
-                      const geojson = {
-                        type: "Polygon",
-                        coordinates: [[...path.map(p => [p.lng, p.lat]), [path[0].lng, path[0].lat]]], // close the ring
-                      };
-                
-                      const res = await fetch("/api/work-areas", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ geojson, name: title || "Unnamed Work Area" }),
-                      });
-                
-                      const json = await res.json();
-                      if (!json.ok) throw new Error(json.error);
-                      
-                      setWorkAreaId(json.id); // ✅ persist the ID
-                      toast({ title: "Work area saved", description: "Polygon was saved to Supabase." });
-                    } catch (err: any) {
-                      toast({ title: "Failed to save polygon", description: err.message || "Unknown error", variant: "destructive" });
-                    }
+          <div className="aspect-[4/3] w-full rounded-md border">
+            <MapWithDrawing
+              mode="draw"
+              polygon={polygon}
+              refreshSignal={refreshSignal}
+              onPolygonChange={async (path, area) => {
+                setPolygon(path);
+                setAreaSqMeters(area ?? null);
+
+                if (!workAreaId && path.length >= 3) {
+                  try {
+                    const geojson = {
+                      type: "Polygon",
+                      coordinates: [[...path.map((p) => [p.lng, p.lat]), [path[0].lng, path[0].lat]]], // close the ring
+                    };
+
+                    
+
+                    const json = await res.json();
+                    if (!json.ok) throw new Error(json.error);
+
+                    setWorkAreaId(json.id);
+                    toast({ title: "Work area saved", description: "Polygon was saved to Supabase." });
+                  } catch (err: any) {
+                    toast({ title: "Failed to save polygon", description: err.message || "Unknown error", variant: "destructive" });
                   }
-                }}
+                }
+              }}
+              georefMode={georefMode}
+              georefColor={georefColor}
+              onGeorefComplete={handleGeorefComplete}
+              pickPointActive={georefMode === "point"}
+              pickZoom={16}
+              bubbles={bubbles}
+              shapes={shapes}
+              enableDrop
+              onDropFilesAt={handleDropFilesAt}
+              focusPoint={focusPoint}
+              focusZoom={16}
+            />
+          </div>
+
+             
                 
+                                
+                
+                const res = await fetch("/api/work-areas", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ geojson, name: title || "Unnamed Work Area" }),
+                });
+                
+                
+                const json = await res.json();
+                if (!json.ok) throw new Error(json.error);
+                
+                
+                setWorkAreaId(json.id); // ✅ persist the ID
+                toast({ title: "Work area saved", description: "Polygon was saved to Supabase." });
+                } catch (err: any) {
+                toast({ title: "Failed to save polygon", description: err.message || "Unknown error", variant: "destructive" });
+                }
+                }
+                }}
                 georefMode={georefMode}
                 georefColor={georefColor}
                 onGeorefComplete={handleGeorefComplete}
@@ -1109,7 +1140,7 @@ ${rec.orgName ? `Org: ${rec.orgName} • ` : ""}Uploaded ${formatDistanceToNow(n
                 onDropFilesAt={handleDropFilesAt}
                 focusPoint={focusPoint}
                 focusZoom={16}
-              />
+                />
             </div>
 
             {records.length > 0 && <UtilityOverviewPanel records={records} className="mt-4" />}
@@ -1300,7 +1331,7 @@ function centroidOfPath(path: LatLng[]): LatLng {
   return { lat: sum.lat / path.length, lng: sum.lng / path.length }
 }
 
-const handleUpload = async (file: File, workAreaId: string, metadata: any) => {
+const handleUpload = async (file: File, workAreaId: string, metadata: { utilityType: string; recordType: string; geometryType: string; orgName: string; uploaderName: string; notes: string }) => {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("workAreaId", workAreaId);
@@ -1313,8 +1344,8 @@ const handleUpload = async (file: File, workAreaId: string, metadata: any) => {
 
   const json = await res.json();
   if (!json.ok) {
-    console.error("Upload failed:", json.error);
-  } else {
-    console.log("✅ Upload successful:", json.path);
+    throw new Error(json.error || "Upload failed");
   }
+
+  return json.path;
 };
