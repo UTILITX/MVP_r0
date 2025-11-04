@@ -6,6 +6,7 @@ import type { RequestRecord, LatLng } from "@/lib/record-types"
 import { loadStagedRecords, saveStagedRecords } from "@/lib/storage"
 import { loadWorkArea, saveWorkArea } from "@/lib/work-area-storage" // ✅ Import moved to top
 
+
 export default function Page() {
   const [records, setRecords] = useState<RequestRecord[]>([])
   const [preloadedPolygon, setPreloadedPolygon] = useState<LatLng[] | null>(null)

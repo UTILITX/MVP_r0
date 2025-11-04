@@ -18,7 +18,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
-import MapWithDrawing from "@/components/map-with-drawing";
+import dynamic from "next/dynamic";
+const MapWithDrawing = dynamic(() => import("../map-with-drawing"), { ssr: false });
 import { UtilityOverviewPanel } from "@/components/utility-overview-panel"
 import type { UtilityType, RecordType } from "@/components/dual-record-selector"
 import { getUtilityColorsFromPath, getUtilityColorsFromUtilityType } from "@/lib/utility-colors"
