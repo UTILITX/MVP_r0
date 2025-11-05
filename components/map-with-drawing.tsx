@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useEffect, useRef, useState, useCallback } from "react"
 import L from "leaflet"
@@ -12,6 +12,7 @@ import {
   ESRI_BASEMAPS,
   type BasemapType,
 } from "@/utils/mapUtils"
+
 
 // Fix Leaflet default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -81,7 +82,7 @@ type MapWithDrawingProps = {
   defaultBasemap?: BasemapType
 }
 
-export function MapWithDrawing({
+export default function MapWithDrawing({
   mode = "draw",
   polygon,
   onPolygonChange,
@@ -101,6 +102,7 @@ export function MapWithDrawing({
   defaultZoom = 12,
   defaultBasemap = "streets",
 }: MapWithDrawingProps) {
+
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<L.Map | null>(null)
   const workAreaLayerRef = useRef<L.LayerGroup | null>(null)
