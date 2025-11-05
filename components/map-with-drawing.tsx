@@ -202,6 +202,10 @@ export default function MapWithDrawing({
       // Disable edit mode if it was active
       map.pm.disableGlobalEditMode()
       setDrawMode(mode)
+    if (workAreaLayerRef.current && !map.hasLayer(workAreaLayerRef.current))
+        map.addLayer(workAreaLayerRef.current)
+    if (recordLayerRef.current && !map.hasLayer(recordLayerRef.current))
+        map.addLayer(recordLayerRef.current)
     } else {
       // Deactivate all modes
       map.pm.disableDraw()
@@ -347,120 +351,118 @@ export default function MapWithDrawing({
     if (!map || !workAreaLayer || !recordLayer) return
 
     const handleCreate = (e: any) => {
-      if (!e || !e.layer) {
-        return
-      }
-
-      const layer = e.layer
-      const id = `feature-${Date.now()}-${Math.random()}`
-
-      const targetLayerType = drawMode === "record" ? "record" : "workArea"
-      const targetLayer = targetLayerType === "record" ? recordLayer : workAreaLayer
-
-      let featureData: DrawnFeature | null = null
-
+      if (!e || !e.layer) return;
+    
+      const map = mapInstanceRef.current;
+      if (!map) return;
+    
+      const layer = e.layer;
+      const id = `feature-${Date.now()}-${Math.random()}`;
+    
+      // Determine layer type
+      const targetLayerType = drawMode === "record" ? "record" : "workArea";
+      const targetLayer =
+        targetLayerType === "record"
+          ? recordLayerRef.current
+          : workAreaLayerRef.current;
+    
+      if (!targetLayer) return;
+    
+      let featureData: DrawnFeature | null = null;
+    
+      // Attach click listener to highlight the feature
       layer.on("click", () => {
-        setSelectedFeatureId(id)
-      })
-
+        setSelectedFeatureId(id);
+      });
+    
+      // Apply styling for Work Area vs Record
       const layerStyle =
         targetLayerType === "workArea"
           ? { color: "#10b981", fillColor: "#10b981", fillOpacity: 0.3, weight: 3 }
-          : { color: "#a855f7", fillColor: "#a855f7", fillOpacity: 0.3, weight: 3 }
-
-      if (layer instanceof L.Polygon) {
-        const latlngs = layer.getLatLngs()[0] as L.LatLng[]
-        const area = calculateArea(latlngs)
-        const coordinates = latlngs.map((ll) => ({ lat: ll.lat, lng: ll.lng }))
-
+          : { color: "#a855f7", fillColor: "#a855f7", fillOpacity: 0.3, weight: 3 };
+    
+      // --- Polygon or Rectangle ---
+      if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
+        const latlngs = layer.getLatLngs()[0] as L.LatLng[];
+        const area = calculateArea(latlngs);
+        const coordinates = latlngs.map((ll) => ({ lat: ll.lat, lng: ll.lng }));
+    
         if (isDuplicateFeature(coordinates, drawnFeatures)) {
-          map.removeLayer(layer)
-          return
+          map.removeLayer(layer);
+          return;
         }
-
-        layer.setStyle(layerStyle)
-
+    
+        layer.setStyle(layerStyle);
+    
         featureData = {
           id,
-          type: "polygon",
+          type: layer instanceof L.Rectangle ? "rectangle" : "polygon",
           area,
           coordinates,
           layer,
           layerType: targetLayerType,
-        }
-
-        targetLayer.addLayer(layer)
-
+        };
+    
+        targetLayer.addLayer(layer);
+    
         if (targetLayerType === "workArea") {
-          onPolygonChange?.(coordinates, area)
+          onPolygonChange?.(coordinates, area);
         }
-      } else if (layer instanceof L.Polyline) {
-        const latlngs = layer.getLatLngs() as L.LatLng[]
-        const coordinates = latlngs.map((ll) => ({ lat: ll.lat, lng: ll.lng }))
-
+      }
+    
+      // --- Polyline ---
+      else if (layer instanceof L.Polyline) {
+        const latlngs = layer.getLatLngs() as L.LatLng[];
+        const coordinates = latlngs.map((ll) => ({ lat: ll.lat, lng: ll.lng }));
+    
         if (isDuplicateFeature(coordinates, drawnFeatures)) {
-          map.removeLayer(layer)
-          return
+          map.removeLayer(layer);
+          return;
         }
-
-        layer.setStyle({ color: layerStyle.color, weight: layerStyle.weight })
-
+    
+        layer.setStyle({ color: layerStyle.color, weight: layerStyle.weight });
+    
         featureData = {
           id,
           type: "polyline",
           coordinates,
           layer,
           layerType: targetLayerType,
-        }
-
-        targetLayer.addLayer(layer)
-      } else if (layer instanceof L.Marker) {
-        const latlng = layer.getLatLng()
-        const coordinates = [{ lat: latlng.lat, lng: latlng.lng }]
-
+        };
+    
+        targetLayer.addLayer(layer);
+      }
+    
+      // --- Marker ---
+      else if (layer instanceof L.Marker) {
+        const latlng = layer.getLatLng();
+        const coordinates = [{ lat: latlng.lat, lng: latlng.lng }];
+    
         if (isDuplicateFeature(coordinates, drawnFeatures)) {
-          map.removeLayer(layer)
-          return
+          map.removeLayer(layer);
+          return;
         }
-
+    
         featureData = {
           id,
           type: "marker",
           coordinates,
           layer,
           layerType: targetLayerType,
-        }
-
-        targetLayer.addLayer(layer)
-      } else if (layer instanceof L.Rectangle) {
-        const latlngs = layer.getLatLngs()[0] as L.LatLng[]
-        const area = calculateArea(latlngs)
-        const coordinates = latlngs.map((ll) => ({ lat: ll.lat, lng: ll.lng }))
-
-        if (isDuplicateFeature(coordinates, drawnFeatures)) {
-          map.removeLayer(layer)
-          return
-        }
-
-        layer.setStyle(layerStyle)
-
-        featureData = {
-          id,
-          type: "rectangle",
-          area,
-          coordinates,
-          layer,
-          layerType: targetLayerType,
-        }
-
-        targetLayer.addLayer(layer)
+        };
+    
+        targetLayer.addLayer(layer);
       }
-
+    
+      // ✅ Persist feature in React state
       if (featureData) {
-        setDrawnFeatures((prev) => [...prev, featureData!])
-        setSelectedFeatureId(id)
+        setDrawnFeatures((prev) => [...prev, featureData]);
+        setSelectedFeatureId(id);
       }
-    }
+    
+      console.log(`✅ Added to ${targetLayerType} group`, targetLayer.getLayers().length);
+    };
+    
 
     const handleEdit = (e: any) => {
       if (!e || !e.layer) {
@@ -821,6 +823,26 @@ export default function MapWithDrawing({
 
     setSelectedFeatureId(feature.id)
   }
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !isInitialized) return;
+  
+    // Whenever draw mode changes, make sure layer groups are reattached
+    if (workAreaLayerRef.current && !map.hasLayer(workAreaLayerRef.current)) {
+      map.addLayer(workAreaLayerRef.current);
+    }
+    if (recordLayerRef.current && !map.hasLayer(recordLayerRef.current)) {
+      map.addLayer(recordLayerRef.current);
+    }
+  }, [drawMode, isInitialized]);
+
+  useEffect(() => {
+    console.log("WorkArea layers:", workAreaLayerRef.current?.getLayers().length ?? 0);
+    console.log("Record layers:", recordLayerRef.current?.getLayers().length ?? 0);
+  }, [drawMode]);
+
+
 
   return (
     <div className="flex h-full w-full">
