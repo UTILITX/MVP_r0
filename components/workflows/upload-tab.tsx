@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react"
-import { useMemo, useState, useRef } from "react"
+import { useMemo, useState, useRef, useCallback } from "react"
 import type React from "react"
 import type { LatLng, RequestRecord } from "@/lib/record-types"
 import { encryptPayload, sealedToHash } from "@/lib/crypto"
@@ -29,6 +29,7 @@ import type { GeometryType, GeorefMode, PendingDropMeta } from "@/lib/types"
 import { RecordsTable } from "@/components/records-table"
 import { Edit } from "lucide-react"
 
+
 type SelectedType = {
   utilityType: UtilityType
   recordType: RecordType
@@ -40,6 +41,7 @@ type Props = {
   preloadedPolygon?: LatLng[] | null
   preloadedAreaSqMeters?: number | null
 }
+
 
 export default function UploadTab({ records, setRecords, preloadedPolygon, preloadedAreaSqMeters }: Props) {
   const { toast } = useToast()
@@ -84,6 +86,10 @@ export default function UploadTab({ records, setRecords, preloadedPolygon, prelo
   const [notes, setNotes] = useState<string>("")
 
   const [isGeometryComplete, setIsGeometryComplete] = useState(false)
+
+  // Map control bridge (for work area + record drawing)
+  const [mapControls, setMapControls] = useState<any>(null)
+
 
   const [redrawTarget, setRedrawTarget] = useState<{ recordId: string; fileId: string } | null>(null)
 
@@ -614,6 +620,12 @@ ${rec.orgName ? `Org: ${rec.orgName} • ` : ""}Uploaded ${formatDistanceToNow(n
     completeUpload()
   }
 
+  // Stable wrapper to avoid render loop when map initializes
+const handleMapReady = useCallback((controls: any) => {
+  setMapControls(controls)
+}, [])
+
+
   return (
     <div className="space-y-4">
       <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -681,6 +693,15 @@ ${rec.orgName ? `Org: ${rec.orgName} • ` : ""}Uploaded ${formatDistanceToNow(n
                 </div>
               )}
 
+              {/* ➕ New “Draw Polygon” button to activate drawing mode on the work area layer*/}
+              <Button
+                onClick={() => mapControls?.activateDrawMode("workArea")}
+                className="w-full bg-blue-600 text-white hover:bg-blue-700"
+              >
+                Draw Polygon
+              </Button>
+
+              
               {polygon && polygon.length >= 3 && (
                 <Button
                   variant="outline"
@@ -1036,6 +1057,7 @@ ${rec.orgName ? `Org: ${rec.orgName} • ` : ""}Uploaded ${formatDistanceToNow(n
                 onDropFilesAt={handleDropFilesAt}
                 focusPoint={focusPoint}
                 focusZoom={16}
+                
               />
             </div>
 

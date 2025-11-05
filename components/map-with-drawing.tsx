@@ -80,6 +80,11 @@ type MapWithDrawingProps = {
   defaultCenter?: LatLng
   defaultZoom?: number
   defaultBasemap?: BasemapType
+  onReady?: (controls: {
+    activateDrawMode: (mode: "workArea" | "record" | "edit" | null) => void;
+    clearLayerFeatures: (layerType: "workArea" | "record") => void;
+    toggleLayerVisibility: (layerType: keyof typeof layerVisibility) => void;
+  }) => void;
 }
 
 export default function MapWithDrawing({
@@ -101,6 +106,7 @@ export default function MapWithDrawing({
   defaultCenter = { lat: 43.7, lng: -79.4 },
   defaultZoom = 12,
   defaultBasemap = "streets",
+  onReady,
 }: MapWithDrawingProps) {
 
   const mapRef = useRef<HTMLDivElement>(null)
@@ -406,7 +412,14 @@ export default function MapWithDrawing({
         targetLayer.addLayer(layer);
     
         if (targetLayerType === "workArea") {
+          // Notify parent that polygon was drawn
           onPolygonChange?.(coordinates, area);
+    
+          // ✅ Auto-exit draw mode after work area completion
+          if (map.pm && map.pm.disableDraw) {
+            map.pm.disableDraw();
+            console.log("✅ Exited draw mode after work area completion");
+          }
         }
       }
     
@@ -462,6 +475,7 @@ export default function MapWithDrawing({
     
       console.log(`✅ Added to ${targetLayerType} group`, targetLayer.getLayers().length);
     };
+    
     
 
     const handleEdit = (e: any) => {
@@ -842,6 +856,20 @@ export default function MapWithDrawing({
     console.log("Record layers:", recordLayerRef.current?.getLayers().length ?? 0);
   }, [drawMode]);
 
+  const map = mapRef.current;
+
+  useEffect(() => {
+    // Only expose controls once the map instance is ready
+    if (!map || !onReady) return;
+  
+    console.log("✅ Map ready — exposing controls to parent");
+    onReady({
+      activateDrawMode,
+      clearLayerFeatures,
+      toggleLayerVisibility,
+    });
+  }, [map, onReady, activateDrawMode, clearLayerFeatures, toggleLayerVisibility]);
+  
 
 
   return (
@@ -947,6 +975,7 @@ export default function MapWithDrawing({
             </div>
           </div>
 
+          {/*
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
             <div className="font-semibold text-sm mb-3 text-gray-800">Drawing Mode</div>
             <div className="space-y-2">
@@ -1014,7 +1043,7 @@ export default function MapWithDrawing({
               </div>
             )}
           </div>
-
+          */}
           {/* Layer Statistics */}
           <div className="bg-gray-50 p-3 rounded-lg">
             <div className="font-semibold text-sm mb-3">Layer Statistics</div>
